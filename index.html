@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tensec — Simulador de Câmbio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Manrope:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary-blue: #1435C3;
+      --gradient-start: #4EA6D7;
+      --gradient-end: #214CE4;
+      --brand-gradient: linear-gradient(135deg, #4EA6D7 0%, #214CE4 100%);
+      --almost-black: #151720;
+      --muted-grey: #50485B;
+      --border-color: #E8E6F0;
+      --bg-section: #F8F7FC;
+      --font-heading: 'Manrope', sans-serif;
+      --font-body: 'Poppins', sans-serif;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+      --timing-fast: 150ms;
+      --timing-base: 250ms;
+      --easing-standard: cubic-bezier(0.4,0,0.2,1);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: var(--font-body);
+      background: #F0F2F8;
+      color: var(--almost-black);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Subtle grid background */
+    body {
+      background-color: #EEF0F8;
+      background-image:
+        linear-gradient(rgba(20,53,195,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(20,53,195,0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .page-logo {
+      height: 32px;
+      margin-bottom: 10px;
+    }
+    .page-tagline {
+      font-family: var(--font-heading);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted-grey);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Simulator card ─────────────────────────────── */
+    .sim-wrapper {
+      background: #fff;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 40px rgba(20,53,195,0.10), 0 2px 8px rgba(0,0,0,0.06);
+      animation: fadeIn 0.5s cubic-bezier(0,0,0.2,1) both;
+    }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(20px) } to { opacity:1; transform:translateY(0) } }
+    @keyframes pulse  { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:0.5; transform:scale(1.35) } }
+
+    .sim-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fff;
+    }
+    .sim-logo { height: 24px; object-fit: contain; }
+    .sim-title {
+      font-family: var(--font-heading);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted-grey);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-left: auto;
+    }
+
+    .sim-body { padding: 20px 24px 24px; }
+
+    /* Top cards */
+    .cards-top { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .card-input {
+      background: #fff;
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 14px;
+      transition: border-color var(--timing-fast) var(--easing-standard), box-shadow var(--timing-fast) var(--easing-standard);
+    }
+    .card-input:focus-within { border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(78,166,215,0.12); }
+    .card-output {
+      background: linear-gradient(135deg, rgba(78,166,215,0.06), rgba(33,76,228,0.08));
+      border: 1.5px solid rgba(20,53,195,0.15);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .card-label {
+      font-size: 9px; font-weight: 600; color: var(--muted-grey);
+      letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;
+    }
+    .input-row { display: flex; align-items: center; gap: 6px; }
+    .currency-badge {
+      font-family: var(--font-heading); font-size: 10px; font-weight: 700; color: var(--muted-grey);
+      background: var(--bg-section); border: 1px solid var(--border-color); border-radius: 5px; padding: 3px 6px; white-space: nowrap;
+    }
+    .currency-badge-blue {
+      font-family: var(--font-heading); font-size: 10px; font-weight: 700; color: var(--primary-blue);
+      background: #e8eaf8; border: 1px solid #c4c9ec; border-radius: 5px; padding: 3px 6px; white-space: nowrap;
+    }
+    .usd-input {
+      background: #fff; border: 1px solid #D1D0D8; border-radius: 7px; outline: none;
+      font-family: var(--font-heading); font-size: 20px; font-weight: 700;
+      color: var(--primary-blue); width: 100%; caret-color: var(--gradient-start);
+      padding: 3px 7px;
+      transition: border-color var(--timing-fast) var(--easing-standard);
+    }
+    .usd-input:focus { border-color: var(--primary-blue); box-shadow: 0 0 0 2px rgba(78,166,215,0.12); }
+    .output-value {
+      font-family: var(--font-heading); font-size: 20px; font-weight: 700;
+      background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    /* Blocks */
+    .rates-block, .fees-block {
+      background: var(--bg-section); border: 1px solid var(--border-color);
+      border-radius: 10px; margin-bottom: 10px; overflow: hidden;
+    }
+    .rate-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 14px; border-bottom: 1px solid var(--border-color);
+    }
+    .rate-row:last-child { border-bottom: none; }
+    .rate-label { font-size: 12px; color: var(--muted-grey); font-weight: 400; }
+    .rate-value { font-size: 12px; color: var(--almost-black); font-weight: 600; font-family: var(--font-heading); }
+    .rate-value-blue {
+      font-size: 12px; font-weight: 700; font-family: var(--font-heading);
+      background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+
+    .spread-row { background: rgba(78,166,215,0.04); border-bottom: 1px solid rgba(78,166,215,0.2) !important; }
+    .spread-input-wrap { display: flex; align-items: center; gap: 5px; }
+    .spread-input {
+      background: #fff; border: 1px solid #D1D0D8; border-radius: 6px; outline: none;
+      font-family: var(--font-heading); font-size: 12px; font-weight: 700;
+      color: var(--primary-blue); width: 52px; text-align: right; padding: 2px 6px;
+      transition: border-color var(--timing-fast) var(--easing-standard);
+    }
+    .spread-input:focus { border-color: var(--primary-blue); box-shadow: 0 0 0 2px rgba(78,166,215,0.12); }
+    .spread-input::-webkit-inner-spin-button, .spread-input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+    .spread-input { -moz-appearance: textfield; }
+    .spread-pct { font-size: 12px; color: var(--primary-blue); font-weight: 600; }
+    .edit-icon { display: inline-flex; align-items: center; margin-left: 3px; opacity: 0.5; flex-shrink: 0; }
+
+    /* Settlement */
+    .settle-header { padding: 10px 14px 7px; border-bottom: 1px solid var(--border-color); background: #fff; }
+    .settle-title { font-family: var(--font-heading); font-size: 9px; font-weight: 700; color: var(--muted-grey); letter-spacing: 0.08em; text-transform: uppercase; }
+    .settle-subtitle { font-size: 10px; color: #999; margin-top: 2px; }
+    .settle-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; padding: 10px 14px 12px; background: #fff; }
+    .settle-btn {
+      border-radius: 7px; border: 1.5px solid var(--border-color); background: #fff;
+      padding: 8px 4px; text-align: center; cursor: pointer;
+      transition: all var(--timing-base) var(--easing-standard);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+    .settle-btn:hover { border-color: var(--gradient-start); box-shadow: 0 4px 12px rgba(78,166,215,0.15); transform: translateY(-1px); }
+    .settle-btn.active {
+      border: 2px solid var(--primary-blue);
+      background: linear-gradient(135deg, rgba(78,166,215,0.06), rgba(20,53,195,0.08));
+      box-shadow: 0 4px 16px rgba(20,53,195,0.15);
+    }
+    .s-label { font-family: var(--font-heading); font-size: 11px; font-weight: 700; color: var(--almost-black); margin-bottom: 1px; }
+    .s-date  { font-size: 9px; color: var(--muted-grey); margin-bottom: 4px; }
+    .s-rate  { font-size: 11px; font-weight: 700; color: var(--primary-blue); }
+    .settle-btn.active .s-label { color: var(--primary-blue); }
+    .settle-btn.active .s-rate  { background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+    /* Footer rows */
+    .footer-revenue {
+      background: linear-gradient(135deg, rgba(34,197,94,0.06), rgba(22,163,74,0.08));
+      border: 1.5px solid rgba(34,197,94,0.25); border-radius: 10px;
+      display: flex; align-items: center; justify-content: space-between; padding: 12px 14px;
+    }
+    .revenue-label { font-size: 11px; color: #15803D; font-weight: 600; }
+    .revenue-value { font-family: var(--font-heading); font-size: 16px; font-weight: 700; color: #16A34A; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="sim-wrapper">
+    <div class="sim-header">
+      <img class="sim-logo" src="https://framerusercontent.com/images/HfFm7oIBfznYXfKHPq1pF9LXLGU.png" alt="Tensec" onerror="this.style.display='none'">
+      <span class="sim-title">Simulador de Câmbio</span>
+    </div>
+
+    <div class="sim-body">
+      <div class="cards-top">
+        <div class="card-input">
+          <span class="card-label">
+            Valor em USD
+            <svg class="edit-icon" width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5a2.121 2.121 0 0 1 3 3L5 14l-4 1 1-4 9.5-9.5z" stroke="#1435C3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <div class="input-row">
+            <span class="currency-badge">USD $</span>
+            <input type="text" id="usdInput" class="usd-input" value="10.000" autocomplete="off">
+          </div>
+        </div>
+        <div class="card-output">
+          <span class="card-label">Valor referência de conversão</span>
+          <div class="input-row">
+            <span class="currency-badge-blue">BRL R$</span>
+            <span id="refValue" class="output-value">–</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rates-block">
+        <div class="rate-row">
+          <span class="rate-label" style="display:flex;align-items:center;gap:7px">
+            Dólar spot
+            <span id="onlineBadge" style="display:inline-flex;align-items:center;gap:4px;font-family:var(--font-heading);font-size:9px;font-weight:700;letter-spacing:0.06em">
+              <span id="onlineDot" style="width:6px;height:6px;border-radius:50%;display:inline-block"></span>
+              <span id="onlineLabel">–</span>
+            </span>
+          </span>
+          <span id="spotDisplay" class="rate-value">–</span>
+        </div>
+        <div class="rate-row spread-row">
+          <span class="rate-label" style="display:flex;align-items:center;gap:4px;color:var(--primary-blue);font-weight:500">
+            + Seu spread
+            <svg class="edit-icon" width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5a2.121 2.121 0 0 1 3 3L5 14l-4 1 1-4 9.5-9.5z" stroke="#1435C3" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <div class="spread-input-wrap">
+            <input type="text" id="spreadInput" class="spread-input" value="2.00" inputmode="decimal">
+            <span class="spread-pct">%</span>
+            <span id="spreadValue" style="font-family:var(--font-heading);font-size:12px;font-weight:600;color:var(--almost-black);margin-left:6px">–</span>
+          </div>
+        </div>
+        <div class="rate-row">
+          <span class="rate-label">= Taxa de câmbio</span>
+          <span id="finalRate" class="rate-value">–</span>
+        </div>
+        <div class="rate-row" style="border-bottom:none">
+          <span class="rate-label">Valor referência de conversão</span>
+          <span id="refValueInline" class="rate-value-blue">–</span>
+        </div>
+      </div>
+
+      <div class="rates-block">
+        <div class="settle-header">
+          <div class="settle-title">Data de liquidação</div>
+          <div class="settle-subtitle">Clique para selecionar a data de liquidação</div>
+        </div>
+        <div class="settle-grid" id="settleBtns"></div>
+      </div>
+
+      <div class="fees-block">
+        <div class="rate-row">
+          <span class="rate-label">Valor referência de conversão</span>
+          <span id="finalRate2" class="rate-value-blue">–</span>
+        </div>
+        <div class="rate-row">
+          <span class="rate-label">+ IOF (com rebate)</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            <span class="rate-value">1,50%</span>
+            <span id="iofValue" class="rate-value-blue">–</span>
+          </span>
+        </div>
+        <div class="rate-row" style="border-bottom:none;background:rgba(20,53,195,0.06);border-radius:0 0 10px 10px">
+          <span class="rate-label" style="color:#1435C3;font-weight:600">= Valor a ser depositado pelo cliente</span>
+          <span id="convRate" style="font-family:var(--font-heading);font-size:16px;font-weight:700;color:#1435C3">–</span>
+        </div>
+      </div>
+
+      <div class="footer-revenue">
+        <span class="revenue-label">Sua receita</span>
+        <span id="revenueValue" class="revenue-value">–</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const SERVICE_FEE = 0.015, REVENUE_SHARE = 0.7;
+  const D_FACTOR = 1.00041, D_LABELS = ['D+0','D+1','D+2','D+3'];
+
+  // ── Brazilian national holidays (fixed + moveable) ──────────────────────
+  const BR_HOLIDAYS = new Set([
+    // 2025
+    '2025-01-01','2025-03-03','2025-03-04','2025-04-18','2025-04-21',
+    '2025-05-01','2025-06-19','2025-09-07','2025-10-12','2025-11-02',
+    '2025-11-15','2025-11-20','2025-12-25',
+    // 2026
+    '2026-01-01','2026-02-16','2026-02-17','2026-04-03','2026-04-21',
+    '2026-05-01','2026-06-04','2026-09-07','2026-10-12','2026-11-02',
+    '2026-11-15','2026-11-20','2026-12-25',
+    // 2027
+    '2027-01-01','2027-03-01','2027-03-02','2027-03-26','2027-04-21',
+    '2027-05-01','2027-05-27','2027-09-07','2027-10-12','2027-11-02',
+    '2027-11-15','2027-11-20','2027-12-25'
+  ]);
+
+  function isoDate(d) {
+    return d.toISOString().slice(0,10);
+  }
+
+  function isBusinessDay(d) {
+    const dow = d.getDay(); // 0=Sun, 6=Sat
+    if (dow === 0 || dow === 6) return false;
+    return !BR_HOLIDAYS.has(isoDate(d));
+  }
+
+  // Returns the last business day on or before d
+  function lastBizDay(d) {
+    const dt = new Date(d);
+    while (!isBusinessDay(dt)) {
+      dt.setDate(dt.getDate() - 1);
+    }
+    return dt;
+  }
+
+  // Returns the nth next business day after d (d itself not counted)
+  function nextBizDays(from, n) {
+    const dt = new Date(from);
+    let count = 0;
+    while (count < n) {
+      dt.setDate(dt.getDate() + 1);
+      if (isBusinessDay(dt)) count++;
+    }
+    return dt;
+  }
+
+  // Calendar days between two dates (for appreciation factor)
+  function calDaysBetween(a, b) {
+    return Math.round((b - a) / 86400000);
+  }
+
+  // Build the 4 settlement dates starting from D+0 (last biz day)
+  function getSettleInfo() {
+    const today  = new Date();
+    const d0     = lastBizDay(today);
+    const d1     = nextBizDays(d0, 1);
+    const d2     = nextBizDays(d0, 2);
+    const d3     = nextBizDays(d0, 3);
+    const dates  = [d0, d1, d2, d3];
+    // Calendar days from D+0 for appreciation factor
+    const calDays = dates.map(d => calDaysBetween(d0, d));
+    return { dates, calDays };
+  }
+
+  const PT_MONTHS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  let selectedD = 0, rawUSD = 10000, SPOT = null;
+
+  function trunc4(n) { return Math.trunc(n * 10000) / 10000; }
+  function fmtRate(n) { return trunc4(n).toLocaleString('pt-BR', {minimumFractionDigits:4, maximumFractionDigits:4}); }
+  function fmtBRL(n)  { return n.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function formatUSD(n){ return n.toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0}); }
+
+  function setOnline(online) {
+    const dot = document.getElementById('onlineDot');
+    const lbl = document.getElementById('onlineLabel');
+    if (online) {
+      dot.style.background = '#22C55E';
+      dot.style.animation = 'pulse 2s infinite';
+      lbl.style.color = '#15803D';
+      lbl.textContent = 'ONLINE';
+    } else {
+      dot.style.background = '#EF4444';
+      dot.style.animation = 'none';
+      lbl.style.color = '#B91C1C';
+      lbl.textContent = 'OFFLINE';
+    }
+  }
+
+  async function fetchSpot() {
+    try {
+      const res = await fetch('https://economia.awesomeapi.com.br/last/USD-BRL');
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      SPOT = parseFloat(data.USDBRL.ask);
+      document.getElementById('spotDisplay').textContent = fmtRate(SPOT);
+      setOnline(true);
+    } catch(e) {
+      if (SPOT === null) SPOT = 4.991; // fallback inicial
+      document.getElementById('spotDisplay').textContent = fmtRate(SPOT);
+      setOnline(false);
+    }
+    calc();
+  }
+
+  function buildSettleBtns(finalRateBase) {
+    const { dates, calDays } = getSettleInfo();
+    const container = document.getElementById('settleBtns');
+    container.innerHTML = '';
+    D_LABELS.forEach((lbl, i) => {
+      const factor = Math.pow(D_FACTOR, calDays[i]);
+      const rate = trunc4(finalRateBase * factor);
+      const d = dates[i];
+      const label = i === 0
+        ? `Hoje, ${d.getDate()} ${PT_MONTHS[d.getMonth()]}`
+        : `${d.getDate()} ${PT_MONTHS[d.getMonth()]}`;
+      const btn = document.createElement('div');
+      btn.className = 'settle-btn' + (i === selectedD ? ' active' : '');
+      btn.innerHTML = `<div class="s-label">${lbl}</div><div class="s-date">${label}</div><div class="s-rate">${fmtRate(rate)}</div>`;
+      btn.addEventListener('click', () => { selectedD = i; calc(); });
+      container.appendChild(btn);
+    });
+  }
+
+  function calc() {
+    if (SPOT === null) return;
+    const spreadPct = parseFloat(document.getElementById('spreadInput').value) || 0, spread = spreadPct / 100;
+    const finalRateBase = trunc4(SPOT * (1 + spread));
+    const { calDays } = getSettleInfo();
+    const selectedRate  = trunc4(finalRateBase * Math.pow(D_FACTOR, calDays[selectedD]));
+    const refBRL        = rawUSD * selectedRate;
+    const iofBRL        = refBRL * SERVICE_FEE;
+    const depositBRL    = rawUSD * trunc4(SPOT * (1 + spread + SERVICE_FEE));
+    const revenue       = spread * SPOT * rawUSD * REVENUE_SHARE;
+
+    document.getElementById('spreadValue').textContent  = fmtRate(spread * SPOT);
+    document.getElementById('finalRate').textContent    = fmtRate(selectedRate);
+    document.getElementById('refValue').textContent     = fmtBRL(refBRL);
+    document.getElementById('refValueInline').textContent = 'R$ ' + fmtBRL(refBRL);
+    document.getElementById('finalRate2').textContent   = 'R$ ' + fmtBRL(refBRL);
+    document.getElementById('iofValue').textContent     = 'R$ ' + fmtBRL(iofBRL);
+    document.getElementById('convRate').textContent     = 'R$ ' + fmtBRL(depositBRL);
+    document.getElementById('revenueValue').textContent = 'R$ ' + fmtBRL(revenue);
+    buildSettleBtns(finalRateBase);
+  }
+
+  // USD input
+  const usdInput = document.getElementById('usdInput');
+  usdInput.addEventListener('focus', function() { this.value = rawUSD === 0 ? '' : String(rawUSD); });
+  usdInput.addEventListener('input', function() { rawUSD = parseInt(this.value.replace(/\D/g,''), 10) || 0; calc(); });
+  usdInput.addEventListener('blur',  function() { this.value = formatUSD(rawUSD); });
+  document.getElementById('spreadInput').addEventListener('input', function() {
+    // allow digits and single decimal separator
+    let v = this.value.replace(/[^0-9.]/g,'');
+    const parts = v.split('.');
+    if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+    this.value = v;
+    calc();
+  });
+
+  // Fetch spot agora e a cada 30s
+  fetchSpot();
+  setInterval(fetchSpot, 30000);
+</script>
+</body>
+</html>
