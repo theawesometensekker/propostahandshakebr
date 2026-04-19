@@ -260,15 +260,11 @@
             <span id="spreadValue" style="font-family:var(--font-heading);font-size:12px;font-weight:600;color:var(--almost-black);margin-left:6px">–</span>
           </div>
         </div>
-        <div class="rate-row">
+        <div class="rate-row" style="border-bottom:none">
           <span class="rate-label">= Taxa de câmbio</span>
           <span id="finalRate" class="rate-value">–</span>
         </div>
-        <div class="rate-row" style="border-bottom:none">
-          <span class="rate-label">Valor referência de conversão</span>
-          <span id="refValueInline" class="rate-value-blue">–</span>
-        </div>
-      </div>
+              </div>
 
       <div class="rates-block">
         <div class="settle-header">
@@ -306,7 +302,12 @@
 </div>
 
 <script>
-  const SERVICE_FEE = 0.015, REVENUE_SHARE = 0.7;
+  const SERVICE_FEE = 0.015;
+  const REVENUE_SHARE = 0.70;
+  const REVSHARE_TABELA = 0.70;
+  const FX_TURBO = 0.10;
+  const FX_SPOT_TURBO = (1 - FX_TURBO);                              // 0.90 — multiplier on spot
+  const REVENUE_SHARE_TURBO = 1 - ((1 - REVSHARE_TABELA) / (1 - FX_TURBO)); // ~22.22%
   const D_FACTOR = 1.00041, D_LABELS = ['D+0','D+1','D+2','D+3'];
 
   // ── Brazilian national holidays (fixed + moveable) ──────────────────────
@@ -326,7 +327,10 @@
   ]);
 
   function isoDate(d) {
-    return d.toISOString().slice(0,10);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   }
 
   function isBusinessDay(d) {
@@ -434,6 +438,7 @@
 
   function calc() {
     if (SPOT === null) return;
+    const TURBO_SPOT = trunc4(FX_SPOT_TURBO * SPOT);
     const spreadPct = parseFloat(document.getElementById('spreadInput').value) || 0, spread = spreadPct / 100;
     const finalRateBase = trunc4(SPOT * (1 + spread));
     const { calDays } = getSettleInfo();
@@ -446,7 +451,6 @@
     document.getElementById('spreadValue').textContent  = fmtRate(spread * SPOT);
     document.getElementById('finalRate').textContent    = fmtRate(selectedRate);
     document.getElementById('refValue').textContent     = fmtBRL(refBRL);
-    document.getElementById('refValueInline').textContent = 'R$ ' + fmtBRL(refBRL);
     document.getElementById('finalRate2').textContent   = 'R$ ' + fmtBRL(refBRL);
     document.getElementById('iofValue').textContent     = 'R$ ' + fmtBRL(iofBRL);
     document.getElementById('convRate').textContent     = 'R$ ' + fmtBRL(depositBRL);
